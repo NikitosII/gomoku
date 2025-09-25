@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36310.24 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gomoku", "gomoku\gomoku.csproj", "{88C3711D-F161-47D2-9656-16516B4C97C2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gomoku.AI", "gomoku.AI\gomoku.AI.csproj", "{31D7E3DB-8BBA-413F-9436-97D643F2B45D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gomoku.UI", "gomoku.UI\gomoku.UI.csproj", "{30A9FC82-8E62-4856-A700-77143639BE6F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{88C3711D-F161-47D2-9656-16516B4C97C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88C3711D-F161-47D2-9656-16516B4C97C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88C3711D-F161-47D2-9656-16516B4C97C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88C3711D-F161-47D2-9656-16516B4C97C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31D7E3DB-8BBA-413F-9436-97D643F2B45D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31D7E3DB-8BBA-413F-9436-97D643F2B45D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31D7E3DB-8BBA-413F-9436-97D643F2B45D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31D7E3DB-8BBA-413F-9436-97D643F2B45D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{30A9FC82-8E62-4856-A700-77143639BE6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{30A9FC82-8E62-4856-A700-77143639BE6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{30A9FC82-8E62-4856-A700-77143639BE6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{30A9FC82-8E62-4856-A700-77143639BE6F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {02DFB2C6-BEE0-4342-A07F-DDCDF6CCFA45}
+	EndGlobalSection
+EndGlobal
