@@ -1,4 +1,5 @@
 ﻿
+using gomoku.AI.Interfaces;
 using gomoku.Entities;
 
 namespace gomoku.AI.Services
@@ -7,12 +8,16 @@ namespace gomoku.AI.Services
     {
         private readonly Dictionary<string, int> _patternScores = new()
         {
-            ["XXXXX"] = 100000, // Win
-            ["_XXXX_"] = 10000,
-            ["_XXXXO"] = 5000,
-            ["OXXXX_"] = 5000,
+            ["XXXXX"] = 1000000,  // win
+            ["_XXXX_"] = 100000,
+            ["_XXXXO"] = 10000,
+            ["OXXXX_"] = 10000,
             ["_XXX_"] = 1000,
+            ["_XXXO"] = 500,
+            ["OXXX_"] = 500,
             ["_XX_"] = 100,
+            ["_XXO"] = 50,
+            ["OXX_"] = 50,
             ["_X_"] = 10
         };
 
@@ -21,9 +26,11 @@ namespace gomoku.AI.Services
             var score = 0;
             var opponent = player == Player.Black ? Player.White : Player.Black;
 
-            // Evaluate all lines (horizontal, vertical, diagonal)
+            // Оценка направлений
             score += EvaluateLines(board, player, opponent);
-            score -= EvaluateLines(board, opponent, player) * 2; // Opponent's threats are more dangerous
+
+            // Вычесть оценку противника
+            score -= (int)(EvaluateLines(board, opponent, player) * 0.8);
 
             return score;
         }
@@ -32,45 +39,65 @@ namespace gomoku.AI.Services
         {
             var score = 0;
             var size = board.Size;
+            var lines = new (int, int)[] { (0, 1), (1, 0), (1, 1), (1, -1) };
 
-            // Horizontal, vertical, and diagonal evaluations
-            for (int row = 0; row < size.Rows; row++)
+            // Horiz, vert, and diag
+            for (int x = 0; x < size.Rows; x++)
             {
-                for (int col = 0; col < size.Columns; col++)
+                for(int y = 0; y < size.Columns; y++)
                 {
-                    if (col <= size.Columns - 5)
-                        score += EvaluateSequence(board, player, opponent, row, col, 0, 1); // Horizontal
-                    if (row <= size.Rows - 5)
-                        score += EvaluateSequence(board, player, opponent, row, col, 1, 0); // Vertical
-                    if (row <= size.Rows - 5 && col <= size.Columns - 5)
-                        score += EvaluateSequence(board, player, opponent, row, col, 1, 1); // Diagonal \
-                    if (row <= size.Rows - 5 && col >= 4)
-                        score += EvaluateSequence(board, player, opponent, row, col, 1, -1); // Diagonal /
+                    foreach(var (z, h) in lines)
+                    {
+                        if(CanEvaluate(board, x, y, z, h, 5))
+                        {
+                            score += EvaluateDirection(board, player, opponent, x, y, z, h);
+                        }
+                    }
                 }
             }
+            
 
             return score;
         }
+        private bool CanEvaluate(GameBoard board, int row, int col, int dr, int dc, int length)
+        {
+            var endRow = row + dr * (length - 1);
+            var endCol = col + dc * (length - 1);
 
-        private int EvaluateSequence(GameBoard board, Player player, Player opponent, int startRow, int startCol, int deltaRow, int deltaCol)
+            return endRow >= 0 && endRow < board.Size.Rows &&
+                   endCol >= 0 && endCol < board.Size.Columns;
+        }
+
+        private int EvaluateDirection(GameBoard board, Player player, Player opponent, int startRow, int startCol, int deltaRow, int deltaCol)
         {
             var pattern = "";
+
+            // Собираем паттерн 
             for (int i = 0; i < 5; i++)
             {
-                var pos = new BoardPosition(startRow + i * deltaRow, startCol + i * deltaCol);
-                if (!board.Size.IsValidPosition(pos))
-                {
-                    pattern += "O"; // Out of board treated as opponent stone
-                    continue;
-                }
+                var row = startRow + i * deltaRow;
+                var col = startCol + i * deltaCol;
+                var pos = new BoardPosition(row, col);
 
                 var cell = board[pos];
-                pattern += cell == player ? 'X' : cell == opponent ? 'O' : '_';
+                if (cell == player)
+                    pattern += 'X';
+                else if (cell == opponent)
+                    pattern += 'O';
+                else
+                    pattern += '_';
             }
 
-            return _patternScores
-                .Where(p => pattern.Contains(p.Key.Replace("X", "X").Replace("O", "O")))
-                .Sum(p => p.Value);
+            // Ищем совпадения 
+            foreach (var (key, value) in _patternScores)
+            {
+                if (pattern.Contains(key.Replace("X", "X").Replace("O", "O")))
+                {
+                    return value;
+                }
+            }
+
+            return 0;
         }
     }
 }

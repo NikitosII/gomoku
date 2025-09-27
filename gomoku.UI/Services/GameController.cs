@@ -1,5 +1,5 @@
 ﻿
-using gomoku.AI.Services;
+using gomoku.AI.Interfaces;
 using gomoku.Entities;
 using gomoku.Interfaces;
 
@@ -62,10 +62,18 @@ namespace gomoku.UI.Services
                 var aiMove = await _ai.FindBestMoveAsync(Board.Clone(), Player.White);
                 MakeMove(aiMove, Player.White);
                 CheckGameResult(aiMove);
+                if (!IsGameOver)
+                {
+                    _currentPlayer = Player.Black;
+                    OnGameStateChanged("Your turn (Black)");
+                }
             }
             catch (Exception ex)
             {
                 OnGameStateChanged($"AI error: {ex.Message}");
+                // В случае ошибки переключимся на игрока
+                _currentPlayer = Player.Black;
+                OnGameStateChanged("Your turn (Black) - AI failed");
             }
         }
 

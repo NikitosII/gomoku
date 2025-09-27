@@ -1,7 +1,6 @@
-﻿
-using gomoku.Entities;
+﻿using gomoku.Entities;
 
-namespace gomoku.AI.Services
+namespace gomoku.AI.Interfaces
 {
     public interface IPositionEvaluator
     {

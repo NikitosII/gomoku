@@ -1,6 +1,6 @@
 ﻿using gomoku.Entities;
 
-namespace gomoku.AI.Services
+namespace gomoku.AI.Interfaces
 {
     public interface IGomokuAI
     {
