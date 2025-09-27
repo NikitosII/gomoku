@@ -7,7 +7,7 @@ namespace gomoku.UI.Services
 {
     public class GameController
     {
-        public event EventHandler<GameStateChangedEventArgs> GameStateChanged;
+        public event EventHandler<GameStateChangedEventArgs>? GameStateChanged;
 
         public GameBoard Board { get; private set; }
         public bool IsGameOver { get; private set; }

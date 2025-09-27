@@ -3,8 +3,6 @@ using gomoku.AI.Services;
 using gomoku.Services;
 using gomoku.UI.Services;
 using gomoku.ValueObjects;
-using System.Windows;
-using System.Windows.Input;
 
 namespace gomoku.UI.Forms
 {
@@ -23,12 +21,16 @@ namespace gomoku.UI.Forms
             var boardSize = new BoardSize(BoardSize, BoardSize);
             var rules = new GomokuRules(boardSize);
             var evaluator = new PatternBasedEvaluator();
-            var ai = new MinimaxAI(rules, evaluator);
+            var ai = new MinimaxAI(rules, evaluator, 3);
 
             _gameController = new GameController(rules, ai);
             _renderer = new BoardRenderer(boardSize, CellSize);
 
-            // _gameController.GameStateChanged += OnGameStateChanged;
+            this.Load += MainForm_Load;
+        }
+        private void MainForm_Load(object? sender, EventArgs e)
+        {
+            _gameController.GameStateChanged += OnGameStateChanged;
             StartNewGame();
         }
 
@@ -47,34 +49,59 @@ namespace gomoku.UI.Forms
             boardPictureBox.Invalidate();
         }
 
-/*        private void OnGameStateChanged(object sender, GameStateChangedEventArgs e)
+        private void OnGameStateChanged(object sender, GameStateChangedEventArgs e)
         {
-            this.Invoke((Action)(() =>
+            if (this.IsHandleCreated && !this.IsDisposed)
             {
-                statusLabel.Text = e.StatusMessage;
-                boardPictureBox.Invalidate();
-
-                if (e.IsGameOver)
+                if (this.InvokeRequired)
                 {
-                    MessageBox.Show(e.StatusMessage, "Game Over", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                } }));
-        }*/
+                    this.Invoke(new Action(() => UpdateUI(e)));
+                }
+                else
+                {
+                    UpdateUI(e);
+                }
+            }
+        }
+        private void UpdateUI(GameStateChangedEventArgs e)
+        {
+            // Дополнительная проверка на случай, если форма закрывается
+            if (this.IsDisposed || !this.IsHandleCreated)
+                return;
+
+            UpdateStatusLabel(e.StatusMessage);
+            boardPictureBox.Invalidate();
+
+            if (e.IsGameOver)
+            {
+                MessageBox.Show(e.StatusMessage, "Game Over",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void UpdateStatusLabel(string message)
+        {
+            if (statusLabel != null && !statusLabel.IsDisposed)
+            {
+                statusLabel.Text = message;
+            }
+        }
 
         private void BoardPictureBox_Paint(object sender, PaintEventArgs e)
         {
             _renderer.DrawBoard(e.Graphics, _gameController.Board, _gameController.WinningLine);
         }
 
-        /*private async void BoardPictureBox_MouseClick(object sender, MouseEventArgs e)
+        private async void BoardPictureBox_MouseClick(object sender, MouseEventArgs e)
         {
             if (_gameController.IsGameOver) return;
 
             var position = _renderer.GetBoardPositionFromPixel(e.Location);
             if (position != null)
             {
-                await _gameController.HumanMoveAsync(position.Value);
+                await _gameController.HumanMoveAsync(position);
             }
-        }*/
+        }
 
         private void NewGameButton_Click(object sender, EventArgs e) => StartNewGame();
     }

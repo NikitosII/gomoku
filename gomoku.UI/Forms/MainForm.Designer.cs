@@ -1,5 +1,5 @@
-﻿using System.Windows.Controls;
-using System.Windows.Input;
+﻿using System.Windows.Forms;
+using System.Drawing;
 
 namespace gomoku.UI.Forms
 {
