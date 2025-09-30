@@ -43,7 +43,9 @@ namespace gomoku.UI.Forms
                 "Hard" => 4,
                 _ => 3
             };
-
+            var evaluator = new PatternBasedEvaluator();
+            var ai = new MinimaxAI(_gameController.Rules, evaluator, difficulty);
+            _gameController.SetAI(ai);
             _gameController.StartNewGame(difficulty);
             statusLabel.Text = "Your turn (Black)";
             boardPictureBox.Invalidate();

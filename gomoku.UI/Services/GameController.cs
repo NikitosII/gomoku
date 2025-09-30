@@ -14,13 +14,19 @@ namespace gomoku.UI.Services
         public IReadOnlyList<BoardPosition> WinningLine { get; private set; } = Array.Empty<BoardPosition>();
 
         private readonly IRules _rules;
-        private readonly IGomokuAI _ai;
+        public IRules Rules => _rules;
+        private IGomokuAI _ai;
         private Player _currentPlayer;
         private int _aiDepth;
 
         public GameController(IRules rules, IGomokuAI ai)
         {
             _rules = rules;
+            _ai = ai;
+            Board = new GameBoard(_rules.GetBoardSize());
+        }
+        public void SetAI(IGomokuAI ai)
+        {
             _ai = ai;
         }
 
