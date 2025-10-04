@@ -20,8 +20,8 @@ namespace gomoku.UI.Forms
 
             var boardSize = new BoardSize(BoardSize, BoardSize);
             var rules = new GomokuRules(boardSize);
-            var evaluator = new PatternBasedEvaluator();
-            var ai = new MinimaxAI(rules, evaluator, 3);
+            // var evaluator = new PatternBasedEvaluator();
+            var ai = new MinimaxAI(rules, 3);
 
             _gameController = new GameController(rules, ai);
             _renderer = new BoardRenderer(boardSize, CellSize);
@@ -36,19 +36,20 @@ namespace gomoku.UI.Forms
 
         private void StartNewGame()
         {
-            var difficulty = difficultyComboBox.SelectedItem?.ToString() switch
+            var (depth, limit) = difficultyComboBox.SelectedItem?.ToString() switch
             {
-                "Easy" => 2,
-                "Medium" => 3,
-                "Hard" => 4,
-                _ => 3
+                "Easy" => (1, 8),
+                "Medium" => (2, 10),
+                "Hard" => (3, 12),
+                _ => (2, 10)
             };
-            var evaluator = new PatternBasedEvaluator();
-            var ai = new MinimaxAI(_gameController.Rules, evaluator, difficulty);
+
+            var ai = new MinimaxAI(_gameController.Rules, depth);
             _gameController.SetAI(ai);
-            _gameController.StartNewGame(difficulty);
-            statusLabel.Text = "Your turn (Black)";
+            _gameController.StartNewGame();
+            statusLabel.Text = "Your turn Black";
             boardPictureBox.Invalidate();
+
         }
 
         private void OnGameStateChanged(object sender, GameStateChangedEventArgs e)
