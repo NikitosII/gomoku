@@ -7,6 +7,7 @@ using gomoku.Interfaces;
 
 namespace gomoku.AI.Services
 {
+    // Основной класс AI для игры
     public class MinimaxAI : IGomokuAI
     {
         private readonly IRules _rules;
@@ -26,11 +27,13 @@ namespace gomoku.AI.Services
             _boardEvaluator = new BoardEvaluator(_threatDetector);
         }
 
+        // Асинхронно находит лучший ход для AI игрока.
         public async Task<BoardPosition> FindBestMoveAsync(GameBoard board, Player aiPlayer, CancellationToken cancellationToken = default)
         {
             return await Task.Run(() => FindBestMove(board, aiPlayer), cancellationToken);
         }
 
+        // // Поиск лучшего хода.
         private BoardPosition FindBestMove(GameBoard board, Player aiPlayer)
         {
 
@@ -62,7 +65,6 @@ namespace gomoku.AI.Services
                 _threatDetector.EvaluateThreatLevel(board, move, aiPlayer, opponent)
             ).First();
         }
-
         private BoardPosition FindBalancedMove(GameBoard board, Player aiPlayer, Player opponent)
         {
             // Сбалансированная стратегия: атака + защита
@@ -94,7 +96,6 @@ namespace gomoku.AI.Services
 
             return bestMove;
         }
-
         private BoardPosition FindStrategicMove(GameBoard board, Player aiPlayer, Player opponent)
         {
             // Полная стратегия с минимаксом
@@ -126,6 +127,8 @@ namespace gomoku.AI.Services
 
             return bestMoves.Count > 0 ? bestMoves[_random.Next(bestMoves.Count)] : strategicMoves[0];
         }
+
+        // Алгоритм минимакс с альфа-бета отсечением для поиска оптимального хода
         private int Minimax(GameBoard board, int depth, bool isMaximizing, Player aiPlayer, Player opponent, int alpha, int beta)
         {
             // Проверка терминального состояния
@@ -178,6 +181,7 @@ namespace gomoku.AI.Services
             }
         }
 
+        // Оценивает лучший ответ противника на данный ход
         private int EvaluateOpponentBestResponse(GameBoard board, Player aiPlayer, Player opponent, int depth)
         {
             if (depth <= 0) return 0;
@@ -192,12 +196,14 @@ namespace gomoku.AI.Services
             return bestResponse;
         }
 
+        // Случайный ход из возможных
         private BoardPosition FindRandomMove(GameBoard board)
         {
             var moves = GetPossibleMoves(board).ToList();
             return moves.Count > 0 ? moves[_random.Next(moves.Count)] : new BoardPosition(7, 7);
         }
 
+        // Получение возможных ходов
         private IEnumerable<BoardPosition> GetPossibleMoves(GameBoard board)
         {
             var moves = new List<BoardPosition>();
@@ -225,6 +231,7 @@ namespace gomoku.AI.Services
             return moves;
         }
 
+        // Проверка наличия камней в соседних клетках
         private bool HasAdjacentStone(GameBoard board, BoardPosition position)
         {
             for (int dr = -1; dr <= 1; dr++)

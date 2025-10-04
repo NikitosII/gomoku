@@ -3,6 +3,7 @@ using gomoku.ValueObjects;
 
 namespace gomoku.UI.Services
 {
+    // Компонент для отрисовки игровой доски и камней.
     public class BoardRenderer : IDisposable
     {
         private readonly BoardSize _boardSize;
@@ -27,6 +28,7 @@ namespace gomoku.UI.Services
             };
         }
 
+        // Отрисовывает всю игровую доску: сетку, камни и выигрышную линию.
         public void DrawBoard(Graphics g, GameBoard board, IReadOnlyList<BoardPosition> winningLine)
         {
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
@@ -40,6 +42,7 @@ namespace gomoku.UI.Services
             }
         }
 
+        // Отрисовывает сетку доски
         private void DrawGrid(Graphics g)
         {
             var boardWidth = (_boardSize.Columns - 1) * _cellSize;
@@ -60,6 +63,7 @@ namespace gomoku.UI.Services
             }
         }
 
+        // Отрисовывает камни на доски
         private void DrawStones(Graphics g, GameBoard board)
         {
             for (int row = 0; row < _boardSize.Rows; row++)
@@ -75,6 +79,7 @@ namespace gomoku.UI.Services
             }
         }
 
+        // Отрисовывает один камень в указанной позиции
         private void DrawStone(Graphics g, BoardPosition position, Player player)
         {
             var center = GetStoneCenter(position);
@@ -93,6 +98,7 @@ namespace gomoku.UI.Services
                 _stoneRadius * 2);
         }
 
+        // Отрисовывает выигрышную линию красным цветом
         private void DrawWinningLine(Graphics g, IReadOnlyList<BoardPosition> winningLine)
         {
             if (winningLine.Count < 2) return;
@@ -102,9 +108,11 @@ namespace gomoku.UI.Services
             g.DrawLines(pen, points);
         }
 
+        // Преобразует позицию на доске в координаты центра камня на экране
         private Point GetStoneCenter(BoardPosition position) =>
             new Point(position.Column * _cellSize, position.Row * _cellSize);
 
+        // Преобразует координаты мыши в позицию на доске.
         public BoardPosition? GetBoardPositionFromPixel(Point pixel)
         {
             var col = (int)Math.Round((double)pixel.X / _cellSize);

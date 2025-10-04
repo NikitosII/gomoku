@@ -5,6 +5,8 @@ using gomoku.Interfaces;
 
 namespace gomoku.UI.Services
 {
+    // Контроллер игры
+    /// обрабатывает ходы игрока и AI
     public class GameController
     {
         public event EventHandler<GameStateChangedEventArgs>? GameStateChanged;
@@ -30,6 +32,7 @@ namespace gomoku.UI.Services
             _ai = ai;
         }
 
+        // Начинает новую игру
         public void StartNewGame(int aiDepth = 3)
         {
             _aiDepth = aiDepth;
@@ -41,6 +44,7 @@ namespace gomoku.UI.Services
             OnGameStateChanged("Your turn (Black)");
         }
 
+        // Обрабатывает ход человека
         public async Task HumanMoveAsync(BoardPosition position)
         {
             if (IsGameOver || _currentPlayer != Player.Black) return;
@@ -61,6 +65,7 @@ namespace gomoku.UI.Services
             await AIMoveAsync();
         }
 
+        // ход AI
         private async Task AIMoveAsync()
         {
             try
@@ -82,12 +87,12 @@ namespace gomoku.UI.Services
                 OnGameStateChanged("Your turn (Black) - AI failed");
             }
         }
-
         private void MakeMove(BoardPosition position, Player player)
         {
             Board[position] = player;
         }
 
+        // Проверяет результат игры после хода
         private bool CheckGameResult(BoardPosition lastMove)
         {
             var result = _rules.GetResult(Board, lastMove);
@@ -115,7 +120,7 @@ namespace gomoku.UI.Services
             GameStateChanged?.Invoke(this, new GameStateChangedEventArgs(message, isGameOver));
         }
     }
-
+    // Аргументы события изменения состояния игры
     public class GameStateChangedEventArgs : EventArgs
     {
         public string StatusMessage { get; }

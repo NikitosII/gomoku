@@ -6,6 +6,8 @@ using gomoku.ValueObjects;
 
 namespace gomoku.UI.Forms
 {
+    // Главная форма приложения
+    /// Обеспечивает взаимодействие пользователя с игрой через графический интерфейс.
     public partial class MainForm : Form
     {
         private const int BoardSize = 15;
@@ -34,6 +36,7 @@ namespace gomoku.UI.Forms
             StartNewGame();
         }
 
+        // Начинает новую игру с выбранным уровнем сложности
         private void StartNewGame()
         {
             var (depth, limit) = difficultyComboBox.SelectedItem?.ToString() switch
@@ -52,6 +55,7 @@ namespace gomoku.UI.Forms
 
         }
 
+        // Обработчик изменения состояния игры
         private void OnGameStateChanged(object sender, GameStateChangedEventArgs e)
         {
             if (this.IsHandleCreated && !this.IsDisposed)
@@ -66,6 +70,8 @@ namespace gomoku.UI.Forms
                 }
             }
         }
+
+        // Обновляет элементы интерфейса
         private void UpdateUI(GameStateChangedEventArgs e)
         {
             // Дополнительная проверка на случай, если форма закрывается
@@ -81,7 +87,6 @@ namespace gomoku.UI.Forms
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
-
         private void UpdateStatusLabel(string message)
         {
             if (statusLabel != null && !statusLabel.IsDisposed)
@@ -90,11 +95,13 @@ namespace gomoku.UI.Forms
             }
         }
 
+        // Отрисовка игровой доски и камней
         private void BoardPictureBox_Paint(object sender, PaintEventArgs e)
         {
             _renderer.DrawBoard(e.Graphics, _gameController.Board, _gameController.WinningLine);
         }
 
+        // Обработчик клика мыши по доске
         private async void BoardPictureBox_MouseClick(object sender, MouseEventArgs e)
         {
             if (_gameController.IsGameOver) return;
@@ -106,6 +113,7 @@ namespace gomoku.UI.Forms
             }
         }
 
+        // Обработчик кнопки начала новой игры
         private void NewGameButton_Click(object sender, EventArgs e) => StartNewGame();
     }
 }

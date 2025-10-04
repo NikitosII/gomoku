@@ -4,6 +4,7 @@ using gomoku.ValueObjects;
 
 namespace gomoku.Services
 {
+    // Реализация стандартных правил
     public class GomokuRules : IRules
     {
         private readonly BoardSize _boardSize;
@@ -20,38 +21,7 @@ namespace gomoku.Services
             _boardSize = boardSize;
         }
 
-        public bool IsMoveValid(GameBoard board, BoardPosition position) =>
-           _boardSize.IsValidPosition(position) && board[position] == Player.None;
-
-        public bool CheckCondition (GameBoard board, BoardPosition position)
-        {
-            var player = board[position];
-            if (player == Player.None) 
-                return false;
-
-            foreach (var direction in Directions)
-            {
-                var count = 1;
-
-                for (var i = 1; i <= 4; i++)
-                {
-                    var pos = position + direction * i;
-                    if (!_boardSize.IsValidPosition(pos) || board[pos] != player) break;
-                    count++;
-                }
-
-                for (var i = 1; i <= 4; i++)
-                {
-                    var pos = position + direction * -i;
-                    if (!_boardSize.IsValidPosition(pos) || board[pos] != player) break;
-                    count++;
-                }
-
-                if (count >= 5) return true;
-            }
-            return false;
-
-        }
+        // Находит выигрышную линию для отображения на UI
         private List<BoardPosition> FindWinningLine(GameBoard board, BoardPosition lastMove)
         {
             var player = board[lastMove];
@@ -85,6 +55,39 @@ namespace gomoku.Services
             }
 
             return winningLine;
+        }
+
+        public bool IsMoveValid(GameBoard board, BoardPosition position) =>
+           _boardSize.IsValidPosition(position) && board[position] == Player.None;
+
+        public bool CheckCondition (GameBoard board, BoardPosition position)
+        {
+            var player = board[position];
+            if (player == Player.None) 
+                return false;
+
+            foreach (var direction in Directions)
+            {
+                var count = 1;
+
+                for (var i = 1; i <= 4; i++)
+                {
+                    var pos = position + direction * i;
+                    if (!_boardSize.IsValidPosition(pos) || board[pos] != player) break;
+                    count++;
+                }
+
+                for (var i = 1; i <= 4; i++)
+                {
+                    var pos = position + direction * -i;
+                    if (!_boardSize.IsValidPosition(pos) || board[pos] != player) break;
+                    count++;
+                }
+
+                if (count >= 5) return true;
+            }
+            return false;
+
         }
 
         public GameResult? GetResult(GameBoard board, BoardPosition position)

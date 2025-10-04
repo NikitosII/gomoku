@@ -1,4 +1,6 @@
 ﻿namespace gomoku.Entities;
+
+// Представляет позицию на игровой доске.
 public record BoardPosition(int Row, int Column)
 {
     public static readonly BoardPosition Zero = new(0, 0);
