@@ -47,11 +47,11 @@ namespace gomoku.AI.Services
             // 2. Выбор стратегии в зависимости от уровня сложности
             return _maxDepth switch
             {
-                1 => FindAggressiveMove(board, aiPlayer, opponent),    // Easy: быстрая агрессивная стратегия
-                2 => FindBalancedMove(board, aiPlayer, opponent),      // Medium: сбалансированная стратегия
-                _ => FindStrategicMove(board, aiPlayer, opponent)      // Hard: полная стратегия с поиском
+                1 => FindAggressiveMove(board, aiPlayer, opponent),    // Easy: одна оценка хода, без поиска
+                _ => FindStrategicMove(board, aiPlayer, opponent)      // Medium/Hard: минимакс на нужную глубину
             };
         }
+
         private BoardPosition FindAggressiveMove(GameBoard board, Player aiPlayer, Player opponent)
         {
             // Агрессивная стратегия: фокус на создание угроз
@@ -60,42 +60,12 @@ namespace gomoku.AI.Services
             if (strategicMoves.Count == 0)
                 return FindRandomMove(board);
 
-            // Выбираем самый агрессивный ход
+            // Ранжируем полной оценкой хода, а не только своей угрозой.
             return strategicMoves.OrderByDescending(move =>
-                _threatDetector.EvaluateThreatLevel(board, move, aiPlayer, opponent)
+                _boardEvaluator.EvaluateMove(board, move, aiPlayer, opponent)
             ).First();
         }
-        private BoardPosition FindBalancedMove(GameBoard board, Player aiPlayer, Player opponent)
-        {
-            // Сбалансированная стратегия: атака + защита
-            var strategicMoves = _boardEvaluator.GetStratMoves(board, aiPlayer, opponent, 6).ToList();
 
-            if (strategicMoves.Count == 0)
-                return FindRandomMove(board);
-
-            var bestMove = strategicMoves[0];
-            var bestScore = int.MinValue;
-
-            foreach (var move in strategicMoves)
-            {
-                var score = _boardEvaluator.EvaluateMove(board, move, aiPlayer, opponent);
-
-                // Добавляем небольшой поиск вперед
-                board[move] = aiPlayer;
-                var opponentThreat = EvaluateOpponentBestResponse(board, aiPlayer, opponent, 1);
-                board[move] = Player.None;
-
-                var totalScore = score - opponentThreat;
-
-                if (totalScore > bestScore)
-                {
-                    bestScore = totalScore;
-                    bestMove = move;
-                }
-            }
-
-            return bestMove;
-        }
         private BoardPosition FindStrategicMove(GameBoard board, Player aiPlayer, Player opponent)
         {
             // Полная стратегия с минимаксом
@@ -137,8 +107,13 @@ namespace gomoku.AI.Services
                 var result = _rules.GetResult(board, lastMove);
                 if (result != null)
                 {
-                    return result.Winner == aiPlayer ? 100000 - depth :
-                           result.Winner == opponent ? -100000 + depth : 0;
+                    // depth - это ОСТАВШАЯСЯ глубина: чем она больше, тем раньше
+                    // найден исход. Поэтому её ПРИБАВЛЯЕМ к выигрышу (быстрая победа
+                    // ценнее медленной) и ВЫЧИТАЕМ из проигрыша (тянуть сопротивление
+                    // как можно дольше).
+                    if (result.Winner == aiPlayer) return Scores.Win + depth;
+                    if (result.Winner == opponent) return -Scores.Win - depth;
+                    return 0; // ничья
                 }
             }
 
@@ -179,21 +154,6 @@ namespace gomoku.AI.Services
                 }
                 return minScore;
             }
-        }
-
-        // Оценивает лучший ответ противника на данный ход
-        private int EvaluateOpponentBestResponse(GameBoard board, Player aiPlayer, Player opponent, int depth)
-        {
-            if (depth <= 0) return 0;
-
-            var opponentMoves = _boardEvaluator.GetStratMoves(board, opponent, aiPlayer, 4).ToList();
-            if (opponentMoves.Count == 0) return 0;
-
-            var bestResponse = opponentMoves.Max(move =>
-                _threatDetector.EvaluateThreatLevel(board, move, opponent, aiPlayer)
-            );
-
-            return bestResponse;
         }
 
         // Случайный ход из возможных

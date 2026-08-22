@@ -13,25 +13,29 @@ namespace gomoku.AI.Evaluation
             _threatDetector = threatDetector;
         }
 
+        // Во сколько раз чужая угроза важнее своей при равном уровне.
+        private const double DefenseWeight = 1.0;
+
         public int EvaluateMove(GameBoard board, BoardPosition move, Player player, Player opponent)
         {
-            int score = 0;
+            // Ход оценивается с двух сторон:
+            //   атака  - какую угрозу он создаёт нам;
+            //   защита - какую угрозу противника он у него отбирает.
+            int attack = _threatDetector.EvaluateThreatLevel(board, move, player, opponent);
+            int defense = _threatDetector.EvaluateThreatLevel(board, move, opponent, player);
 
+            int score = attack + (int)(defense * DefenseWeight);
             score += EvaluateCentrality(move, board.Size);
             score += EvaluateMobility(board, move, player, opponent);
-
-            // Оценка угроз
-            score += _threatDetector.EvaluateThreatLevel(board, move, player, opponent);
-
-            // Штраф за создание возможностей противнику
-            score -= EvaluateThreats(board, move, player, opponent);
-
             return score;
         }
 
+        // Вес чужих структур в оценке позиции.
+        private const double OpponentWeight = 1.05;
+
         public int EvaluatePosition(GameBoard board, Player player, Player opponent)
         {
-            int score = 0;
+            long score = 0;
             var size = board.Size;
 
             // Оцениваем всю доску, но фокусируемся на активных зонах
@@ -42,17 +46,18 @@ namespace gomoku.AI.Evaluation
                     var pos = new BoardPosition(row, col);
                     if (board[pos] == player)
                     {
-                        score += EvaluateValue(board, pos, player, opponent);
+                        score += EvaluateValue(board, pos, player);
                     }
                     else if (board[pos] == opponent)
                     {
                         // Блокировка важнее
-                        score -= (int)(EvaluateValue(board, pos, opponent, player) * 1.2); 
+                        score -= (long)(EvaluateValue(board, pos, opponent) * OpponentWeight);
                     }
                 }
             }
 
-            return score;
+            // Позиционная оценка не имеет права дорасти до Scores.Win
+            return (int)Math.Clamp(score, -Scores.MaxHeuristic, Scores.MaxHeuristic);
         }
 
         public IEnumerable<BoardPosition> GetStratMoves(GameBoard board, Player player, Player opponent, int maxMoves)
@@ -72,59 +77,38 @@ namespace gomoku.AI.Evaluation
                 .Select(x => x.move);
         }
 
-        private int EvaluateValue(GameBoard board, BoardPosition stone, Player player, Player opponent)
+        private int EvaluateValue(GameBoard board, BoardPosition stone, Player player)
         {
             int value = 0;
             var directions = new (int, int)[] { (0, 1), (1, 0), (1, 1), (1, -1) };
 
             foreach (var (dr, dc) in directions)
             {
-                value += EvaluateDirection(board, stone, player, opponent, dr, dc);
+                value += EvaluateDirection(board, stone, player, dr, dc);
             }
 
             return value;
         }
 
-        private int EvaluateDirection(GameBoard board, BoardPosition stone, Player player, Player opponent, int dr, int dc)
+        private int EvaluateDirection(GameBoard board, BoardPosition stone, Player player, int dr, int dc)
         {
-            int playerCount = 1; // Текущий камень
+            var before = new BoardPosition(stone.Row - dr, stone.Column - dc);
+            bool beforeValid = board.Size.IsValidPosition(before);
+            if (beforeValid && board[before] == player) return 0;
+
+            int count = 1;
+            var after = new BoardPosition(stone.Row + dr, stone.Column + dc);
+            while (board.Size.IsValidPosition(after) && board[after] == player)
+            {
+                count++;
+                after = new BoardPosition(after.Row + dr, after.Column + dc);
+            }
+
             int openEnds = 0;
+            if (beforeValid && board[before] == Player.None) openEnds++;
+            if (board.Size.IsValidPosition(after) && board[after] == Player.None) openEnds++;
 
-            // Проверяем в одном направлении
-            for (int i = 1; i <= 4; i++)
-            {
-                var pos = new BoardPosition(stone.Row + dr * i, stone.Column + dc * i);
-                if (!board.Size.IsValidPosition(pos)) break;
-
-                if (board[pos] == player) playerCount++;
-                else if (board[pos] == Player.None) { openEnds++; break; }
-                else break;
-            }
-
-            // Проверяем в противоположном направлении
-            for (int i = 1; i <= 4; i++)
-            {
-                var pos = new BoardPosition(stone.Row - dr * i, stone.Column - dc * i);
-                if (!board.Size.IsValidPosition(pos)) break;
-
-                if (board[pos] == player) playerCount++;
-                else if (board[pos] == Player.None) { openEnds++; break; }
-                else break;
-            }
-
-            // Оценка на основе количества камней и открытых концов
-            return (playerCount, openEnds) switch
-            {
-                (5, _) => 100000,  // Победа
-                (4, 2) => 10000,   // Открытая четверка
-                (4, 1) => 5000,    // Полуоткрытая четверка
-                (3, 2) => 1000,    // Открытая тройка
-                (3, 1) => 500,     // Полуоткрытая тройка
-                (2, 2) => 100,     // Открытая двойка
-                (2, 1) => 50,      // Полуоткрытая двойка
-                (1, 2) => 10,      // Одиночка с двумя открытыми концами
-                _ => 1
-            };
+            return Scores.ForLine(count, openEnds);
         }
 
         private int EvaluateCentrality(BoardPosition move, BoardSize size)
@@ -152,21 +136,6 @@ namespace gomoku.AI.Evaluation
             }
 
             return mobility;
-        }
-
-        private int EvaluateThreats(GameBoard board, BoardPosition move, Player player, Player opponent)
-        {
-            int threatScore = 0;
-            board[move] = player;
-
-            // Проверяем, не создает ли ход возможности для противника
-            foreach (var opponentMove in GetPossibleMoves(board).Take(5))
-            {
-                threatScore += _threatDetector.EvaluateThreatLevel(board, opponentMove, opponent, player) / 2;
-            }
-
-            board[move] = Player.None;
-            return threatScore;
         }
 
         private IEnumerable<BoardPosition> GetPossibleMoves(GameBoard board)

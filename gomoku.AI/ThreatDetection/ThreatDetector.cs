@@ -1,4 +1,5 @@
 ﻿using gomoku.AI.Interfaces;
+using gomoku.AI.Evaluation;
 using gomoku.Entities;
 using gomoku.Interfaces;
 
@@ -11,24 +12,25 @@ namespace gomoku.AI.ThreatDetection
         {
             (0, 1), (1, 0), (1, 1), (1, -1)
         };
+
         public ThreatDetector (IRules rules)
         {
             _rules = rules;
         }
-        private Player GetOpponent(Player player)
-        {
-            return player == Player.Black ? Player.White : Player.Black;
-        }
 
         public int EvaluateThreatLevel(GameBoard board, BoardPosition move, Player player, Player opponent)
         {
-            int threatLevel = 0;
+            if (board[move] != Player.None) return 0;
 
+            board[move] = player;
+
+            int threatLevel = 0;
             foreach (var (dr, dc) in _directions)
             {
-                threatLevel += EvaluateDirectionThreat(board, move, player, opponent, dr, dc);
+                threatLevel += EvaluateDirectionThreat(board, move, player, dr, dc);
             }
 
+            board[move] = Player.None;
             return threatLevel;
         }
 
@@ -56,7 +58,7 @@ namespace gomoku.AI.ThreatDetection
             // 3. Создание двойных угроз
             foreach (var move in possibleMoves)
             {
-                if (CountSimultaneousThreats(board, move, player, opponent) >= 2)
+                if (CountSimultaneousThreats(board, move, player) >= 2)
                     criticalMoves.Add(move);
             }
 
@@ -70,12 +72,12 @@ namespace gomoku.AI.ThreatDetection
 
             foreach (var (dr, dc) in _directions)
             {
-                var threat = EvaluateDirectionThreat(board, move, player, GetOpponent(player),dr, dc);
+                var threat = EvaluateDirectionThreat(board, move, player, dr, dc);
                 threatLevel = Math.Max(threatLevel, threat);
             }
 
             board[move] = Player.None;
-            return threatLevel >= 500;
+            return threatLevel >= Scores.ClosedThree;
         }
 
         public bool IsImmediateWin(GameBoard board, BoardPosition move, Player player)
@@ -86,75 +88,35 @@ namespace gomoku.AI.ThreatDetection
             return isWin;
         }
 
-
-
-        private int EvaluateDirectionThreat(GameBoard board, BoardPosition move, Player player, Player opponent, int dr, int dc)
+        // Снимает линию из 9 клеток с ходом в центре и отдаёт её на разбор в ThreatPatterns. 
+        private int EvaluateDirectionThreat(GameBoard board, BoardPosition move, Player player, int dr, int dc)
         {
-            int maxScore = 0;
+            Span<byte> line = stackalloc byte[ThreatPatterns.Length];
 
-            // Проверяем в 4 направлениях
-            for (int i = -4; i <= 0; i++)
+            for (int i = 0; i < ThreatPatterns.Length; i++)
             {
-                var score = EvaluateSequence(board, move, player, opponent, dr, dc, i);
-                maxScore = Math.Max(maxScore, score);
+                int offset = i - ThreatPatterns.Radius;
+                var pos = new BoardPosition(move.Row + dr * offset, move.Column + dc * offset);
+
+                if (!board.Size.IsValidPosition(pos)) line[i] = ThreatPatterns.Blocked;
+                else if (board[pos] == player) line[i] = ThreatPatterns.Own;
+                else if (board[pos] == Player.None) line[i] = ThreatPatterns.Empty;
+                else line[i] = ThreatPatterns.Blocked;
             }
 
-            return maxScore;
+            return ThreatPatterns.Score(line);
         }
 
-        private int EvaluateSequence(GameBoard board, BoardPosition start, Player player, Player opponent, int dr, int dc, int offset)
-        {
-            int playerCount = 0;
-            int emptyCount = 0;
-            bool blocked = false;
-
-            // Анализируем последовательность из 5 клеток
-            for (int j = 0; j < 5; j++)
-            {
-                var pos = new BoardPosition(
-                    start.Row + dr * (offset + j),
-                    start.Column + dc * (offset + j)
-                );
-
-                if (!board.Size.IsValidPosition(pos))
-                {
-                    blocked = true;
-                    break;
-                }
-
-                var cell = board[pos];
-                if (cell == player)
-                    playerCount++;
-                else if (cell == opponent)
-                {
-                    blocked = true;
-                    break;
-                }
-                else
-                    emptyCount++;
-            }
-
-            if (blocked) return 0;
-
-            // Оценка на основе количества камней игрока и пустых клеток
-            return playerCount switch
-            {
-                4 when emptyCount == 1 => 10000, // Открытая четверка
-                3 when emptyCount == 2 => 1000,  // Открытая тройка
-                2 when emptyCount == 3 => 100,   // Открытая двойка
-                1 when emptyCount == 4 => 10,    // Одиночный камень
-                _ => 0
-            };
-        }
-
-        private int CountSimultaneousThreats(GameBoard board, BoardPosition move, Player player, Player opponent)
+        private int CountSimultaneousThreats(GameBoard board, BoardPosition move, Player player)
         {
             int threatCount = 0;
             board[move] = player;
 
+            // Планка - ОТКРЫТАЯ тройка: две таких в разных направлениях есть классическая вилка, её уже не закрыть одним ходом.
+            // Планка держится на том, что ThreatPatterns отличает открытую тройку от закрытой.
             foreach (var (dr, dc) in _directions)
             {
-                if (EvaluateDirectionThreat(board, move, player, opponent, dr, dc) >= 1000)
+                if (EvaluateDirectionThreat(board, move, player, dr, dc) >= Scores.OpenThree)
                     threatCount++;
             }
 
